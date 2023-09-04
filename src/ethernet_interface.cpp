@@ -766,7 +766,11 @@ std::string EthernetInterface::macAddress([[maybe_unused]] std::string value)
         lg2::error("Tried to set MAC address on VLAN");
         elog<InternalFailure>();
     }
+	lg2::info("EthernetInterface macAddress called");
+
 #ifdef PERSIST_MAC
+	lg2::info("PERSIST_MAC is set");
+
     stdplus::EtherAddr newMAC;
     try
     {
@@ -788,6 +792,8 @@ std::string EthernetInterface::macAddress([[maybe_unused]] std::string value)
     auto interface = interfaceName();
     auto validMAC = stdplus::toStr(newMAC);
 
+    lg2::info("validMAC: {NET_MAC}", "NET_MAC", validMAC);
+
     // We don't need to update the system if the address is unchanged
     auto oldMAC =
         stdplus::fromStr<stdplus::EtherAddr>(MacAddressIntf::macAddress());
@@ -802,20 +808,29 @@ std::string EthernetInterface::macAddress([[maybe_unused]] std::string value)
             }
         }
         MacAddressIntf::macAddress(validMAC);
+        lg2::info("writeConfigurationFile.....");
 
         writeConfigurationFile();
+	lg2::info("addReloadPreHook.....");
+
         manager.get().addReloadPreHook([interface]() {
             // The MAC and LLADDRs will only update if the NIC is already down
             system::setNICUp(interface, false);
         });
+	lg2::info("reloadConfigs.....");
+
         manager.get().reloadConfigs();
     }
 
 #ifdef HAVE_UBOOT_ENV
+	lg2::info("HAVE_UBOOT_ENV is set");
+
     // Ensure that the valid address is stored in the u-boot-env
     auto envVar = interfaceToUbootEthAddr(interface);
     if (envVar)
     {
+	lg2::info("execute.....");
+
         // Trimming MAC addresses that are out of range. eg: AA:FF:FF:FF:FF:100;
         // and those having more than 6 bytes. eg: AA:AA:AA:AA:AA:AA:BB
         execute("/sbin/fw_setenv", "fw_setenv", envVar->c_str(),
@@ -825,6 +840,8 @@ std::string EthernetInterface::macAddress([[maybe_unused]] std::string value)
 
     return value;
 #else
+	lg2::info("Writing MAC address is not allowed");
+
     elog<NotAllowed>(
         NotAllowedArgument::REASON("Writing MAC address is not allowed"));
 #endif // PERSIST_MAC

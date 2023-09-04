@@ -200,7 +200,7 @@ bool setInventoryMACOnSystem(sdbusplus::bus_t& bus, const std::string& intfname)
     catch (const std::exception& e)
     {
         lg2::error("Exception occurred during getting of MAC "
-                   "address from Inventory");
+                   "address from Inventory: {ERROR}", "ERROR", e);
         return false;
     }
     return true;
